@@ -44,12 +44,13 @@ impl Semaphore {
                 let task_inner = task.inner_exclusive_access();
                 let task_res = task_inner.res.as_ref().unwrap();
                 let task_tid = task_res.tid;
+
+                drop(task_inner);
                 while inner.allocated_queue.len() < task_tid + 1{
                     inner.allocated_queue.push(0);
                 }
                 inner.allocated_queue[task_tid] += 1;
 
-                drop(task_inner);
 
                 add_task(task);
             }
@@ -70,6 +71,7 @@ impl Semaphore {
             let current_task_res = current_task_inner.res.as_ref().unwrap();
             let tid = current_task_res.tid;
 
+            drop(current_task_inner);
             while inner.allocated_queue.len() < tid + 1{
                 inner.allocated_queue.push(0);
             }
@@ -78,6 +80,9 @@ impl Semaphore {
     }
     pub fn get_count(&self)-> isize{
         let mut inner = self.inner.exclusive_access();
+        if inner.count < 0{
+            return 0;
+        }
         return inner.count;
     }
 
@@ -100,6 +105,7 @@ impl Semaphore {
                 let current_task_res = current_task_inner.res.as_ref().unwrap();
                 let td = current_task_res.tid;
 
+                drop(current_task_inner);
                 while res.len() < td + 1{
                     res.push(0);
                 }

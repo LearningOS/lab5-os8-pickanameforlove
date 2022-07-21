@@ -23,7 +23,7 @@ const RES_NUM: [usize; RES_TYPE] = [1, 2, 1];
 const REQUEST: [Option<usize>; THREAD_N] = [Some(1), Some(3), Some(2)];
 
 fn try_sem_down(sem_id: usize) {
-    println!("try--------------------------down");
+    // println!("try--------------------------down");
     if semaphore_down(sem_id) == -0xdead {
         sem_dealloc(gettid() as usize);
         println!("Deadlock detected. Test 08_sem1 failed!");
@@ -32,7 +32,7 @@ fn try_sem_down(sem_id: usize) {
 }
 
 fn sem_alloc(tid: usize) {
-    println!("sem-----alloc-------------------------{}",tid);
+    // println!("sem-----alloc-------------------------{}",tid);
     match tid {
         1 => assert_eq!(semaphore_down(2), 0),
         2 => {
@@ -62,11 +62,14 @@ fn deadlock_test() {
     let tid = gettid() as usize;
     println!("thread {} running", tid);
     sem_alloc(tid);
-    sleep(100);
+    // println!("{}----------------------first",tid);
+    // sleep(100);
     if let Some(sem_id) = REQUEST[tid - 1] {
         try_sem_down(sem_id);
+        // println!("{}----------------------second",tid);
         semaphore_up(sem_id);
     }
+    // println!("{}----------------------third",tid);
     sem_dealloc(tid);
     println!("thread {} exited", tid);
     exit(0);

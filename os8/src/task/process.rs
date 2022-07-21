@@ -33,6 +33,9 @@ pub struct ProcessControlBlockInner {
     pub semaphore_list: Vec<Option<Arc<Semaphore>>>,
     pub condvar_list: Vec<Option<Arc<Condvar>>>,
     pub is_enable_deadlock_detection: bool,
+    pub sem_work: Vec<usize>,
+    pub sem_alloc: Vec<Vec<usize>>,
+    pub sem_need: Vec<Vec<usize>>,
 }
 
 impl ProcessControlBlockInner {
@@ -65,6 +68,21 @@ impl ProcessControlBlockInner {
     pub fn get_task(&self, tid: usize) -> Arc<TaskControlBlock> {
         self.tasks[tid].as_ref().unwrap().clone()
     }
+    // pub fn sem_deadlock(&self) -> bool{
+    //     let l_tasks = self.tasks.len();
+    //     let mut Finish = vec![false; l_tasks];
+    //     let mut Need = self.sem_need.clone();
+    //     let mut Work = self.sem_work.clone();
+    //     let mut Allocation = self.sem_alloc.clone();
+
+    //     while let Some(t) = find_thread(&Need, &Work, &Finish, l_tasks){
+    //         for i in 0..l_mutex_len{
+    //             Work[i] = Work[i] + Allocation[i][t] as isize; 
+    //         }
+    //         Finish[t] = true;
+    //     }
+    //     check_Finish(&Finish)
+    // }
     pub fn deadlock_detection(&self, id: usize) -> bool{
         let l_tasks = self.tasks.len();
         let l_mutex_len = self.mutex_list.len();
@@ -108,8 +126,8 @@ impl ProcessControlBlockInner {
             // println!("109");
             let mut Work = vec![0;l_semphore_len];
             let mut Finish = vec![false; l_tasks];
-            let mut Need = vec![vec![0;l_tasks];l_semphore_len];
-            let mut Allocation = vec![vec![0;l_tasks];l_semphore_len];
+            let mut Need = Vec::new();
+            let mut Allocation = Vec::new();
             for i in 0..l_semphore_len{
                 if let Some(sem_obj) = &self.semaphore_list[i] {
                     Work[i] = sem_obj.get_count();
@@ -119,53 +137,65 @@ impl ProcessControlBlockInner {
                 
                 if let Some(sem_obj) = &self.semaphore_list[i] {
                     if let Some(res) = sem_obj.get_waiting_tids(){
-                        Need[i] =  res;
+                        Need.push(res);
+                    }else{
+                        Need.push(Vec::new());
                     }
                     if let Some(res) = sem_obj.get_allocated_tids(){
-                        Allocation[i] = res;
+                        Allocation.push(res);
+                    }else{
+                        Allocation.push(Vec::new());
                     }
+                }else{
+                    Need.push(Vec::new());
+                    Allocation.push(Vec::new());
                 }
             }
             let c_task = current_task().unwrap();
             let current_task_inner = c_task.inner_exclusive_access();
             let current_task_res = current_task_inner.res.as_ref().unwrap();
             let c_tid = current_task_res.tid;
-            if  Need[id].len() < c_tid + 1{
+            while  Need[id].len() < c_tid + 1{
                 Need[id].push(0);
             }
+            // println!("Need index {}----{}",id,c_tid);
             Need[id][c_tid] += 1;
+            drop(current_task_inner);
 
-            println!("-----------------work-------------------");
-            for i in 0..l_semphore_len{
-                print!(" {}",Work[i]);
-            }
-            println!("");
-            println!("------------------need------------------------");
-            for i in 0..l_semphore_len{
-                for j in 0..Need[i].len(){
-                    print!("{} ",Need[i][j]);
-                }
-                println!("");
-            }
-            println!("--------------------------Allo------------------------");
-            for i in 0..l_semphore_len{
-                for j in 0..Allocation[i].len(){
-                    print!("{} ",Allocation[i][j]);
-                }
-                println!("");
-            }
-            println!("---------------------------------------------------");
+            // println!("-----------------work-------------------");
+            // for i in 0..l_semphore_len{
+            //     print!(" {}",Work[i]);
+            // }
+            // println!("");
+            // println!("------------------need------------------------");
+            // for i in 0..l_semphore_len{
+            //     for j in 0..Need[i].len(){
+            //         print!("{} ",Need[i][j]);
+            //     }
+            //     println!("");
+            // }
+            // println!("--------------------------Allo------------------------");
+            // for i in 0..l_semphore_len{
+            //     for j in 0..Allocation[i].len(){
+            //         print!("{} ",Allocation[i][j]);
+            //     }
+            //     println!("");
+            // }
+            // println!("---------------------------------------------------");
             // println!("130");
             
 
             // println!("140");
             while let Some(t) = find_thread(&Need, &Work, &Finish, l_tasks){
-                for i in 0..l_mutex_len{
-                    Work[i] = Work[i] + Allocation[i][t] as isize; 
+                for i in 0..l_semphore_len{
+                    if t < Allocation[i].len(){
+                        Work[i] = Work[i] + Allocation[i][t] as isize; 
+                    } 
                 }
                 Finish[t] = true;
             }
             // println!("147");
+            // println!("--------{}------------",check_Finish(&Finish));
             check_Finish(&Finish)
         }else{
             true
@@ -239,6 +269,9 @@ impl ProcessControlBlock {
                     semaphore_list: Vec::new(),
                     condvar_list: Vec::new(),
                     is_enable_deadlock_detection: false,
+                    sem_work: Vec::new(),
+                    sem_alloc: Vec::new(),
+                    sem_need: Vec::new(),
                 })
             },
         });
@@ -361,6 +394,9 @@ impl ProcessControlBlock {
                     semaphore_list: Vec::new(),
                     condvar_list: Vec::new(),
                     is_enable_deadlock_detection: false,
+                    sem_work: Vec::new(),
+                    sem_alloc: Vec::new(),
+                    sem_need: Vec::new(),
                 })
             },
         });
@@ -417,6 +453,9 @@ impl ProcessControlBlock {
                     semaphore_list: Vec::new(),
                     condvar_list: Vec::new(),
                     is_enable_deadlock_detection: false,
+                    sem_work: Vec::new(),
+                    sem_alloc: Vec::new(),
+                    sem_need: Vec::new(),
                 })
             },
         });
