@@ -102,11 +102,10 @@ impl ProcessControlBlockInner {
                 }
                 Finish[t] = true;
             }
-            println!("{}",check_Finish(&Finish));
             check_Finish(&Finish)
 
         }else if l_semphore_len > 0{
-            println!("109");
+            // println!("109");
             let mut Work = vec![0;l_semphore_len];
             let mut Finish = vec![false; l_tasks];
             let mut Need = vec![vec![0;l_tasks];l_semphore_len];
@@ -127,7 +126,6 @@ impl ProcessControlBlockInner {
                     }
                 }
             }
-            println!("130");
             let c_task = current_task().unwrap();
             let current_task_inner = c_task.inner_exclusive_access();
             let current_task_res = current_task_inner.res.as_ref().unwrap();
@@ -137,14 +135,37 @@ impl ProcessControlBlockInner {
             }
             Need[id][c_tid] += 1;
 
-            println!("140");
+            println!("-----------------work-------------------");
+            for i in 0..l_semphore_len{
+                print!(" {}",Work[i]);
+            }
+            println!("");
+            println!("------------------need------------------------");
+            for i in 0..l_semphore_len{
+                for j in 0..Need[i].len(){
+                    print!("{} ",Need[i][j]);
+                }
+                println!("");
+            }
+            println!("--------------------------Allo------------------------");
+            for i in 0..l_semphore_len{
+                for j in 0..Allocation[i].len(){
+                    print!("{} ",Allocation[i][j]);
+                }
+                println!("");
+            }
+            println!("---------------------------------------------------");
+            // println!("130");
+            
+
+            // println!("140");
             while let Some(t) = find_thread(&Need, &Work, &Finish, l_tasks){
                 for i in 0..l_mutex_len{
                     Work[i] = Work[i] + Allocation[i][t] as isize; 
                 }
                 Finish[t] = true;
             }
-            println!("147");
+            // println!("147");
             check_Finish(&Finish)
         }else{
             true
@@ -158,6 +179,7 @@ pub fn find_thread(need: &Vec<Vec<usize>>, work: &Vec<isize>, finish: &Vec<bool>
 
     for t in 0..threads{
         if !finish[t] {
+            flag = false;
             for i in 0..l1{
                 if need[i].len() > t{
                     if need[i][t] > work[i] as usize{

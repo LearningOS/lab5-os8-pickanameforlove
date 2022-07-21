@@ -12,7 +12,7 @@ use user_lib::{enable_deadlock_detect, mutex_blocking_create, mutex_lock, mutex_
 
 #[no_mangle]
 pub fn main() -> i32 {
-    println!("test deadlock----------------");
+    
     enable_deadlock_detect(true);
     let mid = mutex_blocking_create() as usize;
     assert_eq!(mutex_lock(mid), 0);
